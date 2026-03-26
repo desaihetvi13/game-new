@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { adsSchema, brandingSchema } from "@/lib/validators";
 function isConnectionError(error: unknown) {
   if (!(error instanceof Error)) return false;
@@ -7,7 +7,10 @@ function isConnectionError(error: unknown) {
     message.includes("can't reach database server") ||
     message.includes("database server") ||
     message.includes("connection") ||
-    message.includes("p1001")
+    message.includes("p1001") ||
+    message.includes("p1000") ||
+    message.includes("p1012") ||
+    message.includes("environment variable not found")
   );
 }
 
@@ -44,6 +47,7 @@ const defaultAds: AdsConfig = {
 
 async function getConfig<T>(key: string, fallback: T): Promise<T> {
   try {
+    const prisma = getPrisma();
     const row = await prisma.config.findUnique({ where: { key } });
     if (!row) {
       await prisma.config.create({ data: { key, value: fallback as object } });
@@ -60,6 +64,7 @@ async function getConfig<T>(key: string, fallback: T): Promise<T> {
 
 async function setConfig<T>(key: string, value: T): Promise<void> {
   try {
+    const prisma = getPrisma();
     await prisma.config.upsert({
       where: { key },
       create: { key, value: value as object },

@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { createGameSchema, updateGameSchema } from "@/lib/validators";
 
 export interface Game {
@@ -61,12 +61,16 @@ function isConnectionError(error: unknown) {
     message.includes("can't reach database server") ||
     message.includes("database server") ||
     message.includes("connection") ||
-    message.includes("p1001")
+    message.includes("p1001") ||
+    message.includes("p1000") ||
+    message.includes("p1012") ||
+    message.includes("environment variable not found")
   );
 }
 
 export async function listGames(category?: string): Promise<Game[]> {
   try {
+    const prisma = getPrisma();
     const games = await prisma.game.findMany({
       where: {
         active: true,
@@ -83,6 +87,7 @@ export async function listGames(category?: string): Promise<Game[]> {
 
 export async function getFeaturedGames(limit = 6): Promise<Game[]> {
   try {
+    const prisma = getPrisma();
     const games = await prisma.game.findMany({
       where: { active: true, featured: true },
       orderBy: { plays: "desc" },
@@ -97,6 +102,7 @@ export async function getFeaturedGames(limit = 6): Promise<Game[]> {
 
 export async function getPopularGames(limit = 12): Promise<Game[]> {
   try {
+    const prisma = getPrisma();
     const games = await prisma.game.findMany({
       where: { active: true },
       orderBy: { plays: "desc" },
@@ -111,6 +117,7 @@ export async function getPopularGames(limit = 12): Promise<Game[]> {
 
 export async function getGame(slug: string): Promise<Game | undefined> {
   try {
+    const prisma = getPrisma();
     const game = await prisma.game.findFirst({ where: { slug, active: true } });
     return game ? toGame(game) : undefined;
   } catch (error) {
@@ -121,6 +128,7 @@ export async function getGame(slug: string): Promise<Game | undefined> {
 
 export async function getGameAdmin(slug: string): Promise<Game | undefined> {
   try {
+    const prisma = getPrisma();
     const game = await prisma.game.findUnique({ where: { slug } });
     return game ? toGame(game) : undefined;
   } catch (error) {
@@ -131,6 +139,7 @@ export async function getGameAdmin(slug: string): Promise<Game | undefined> {
 
 export async function listAllGames(): Promise<Game[]> {
   try {
+    const prisma = getPrisma();
     const games = await prisma.game.findMany({
       orderBy: { createdAt: "desc" },
     });
@@ -143,6 +152,7 @@ export async function listAllGames(): Promise<Game[]> {
 
 export async function createGame(data: Omit<GameInput, "plays" | "active">): Promise<Game> {
   const parsed = createGameSchema.parse(data);
+  const prisma = getPrisma();
   const created = await prisma.game.create({
     data: {
       slug: parsed.slug,
@@ -163,6 +173,7 @@ export async function createGame(data: Omit<GameInput, "plays" | "active">): Pro
 
 export async function updateGame(slug: string, data: Partial<GameInput>): Promise<void> {
   const parsed = updateGameSchema.parse(data);
+  const prisma = getPrisma();
   await prisma.game.update({
     where: { slug },
     data: {
@@ -180,6 +191,7 @@ export async function updateGame(slug: string, data: Partial<GameInput>): Promis
 }
 
 export async function deleteGame(slug: string): Promise<void> {
+  const prisma = getPrisma();
   await prisma.game.update({
     where: { slug },
     data: { active: false },
@@ -187,10 +199,12 @@ export async function deleteGame(slug: string): Promise<void> {
 }
 
 export async function hardDeleteGame(slug: string): Promise<void> {
+  const prisma = getPrisma();
   await prisma.game.delete({ where: { slug } });
 }
 
 export async function incrementPlays(slug: string): Promise<void> {
+  const prisma = getPrisma();
   await prisma.game.update({
     where: { slug },
     data: { plays: { increment: 1 } },
@@ -199,6 +213,7 @@ export async function incrementPlays(slug: string): Promise<void> {
 
 export async function getCategories(): Promise<string[]> {
   try {
+    const prisma = getPrisma();
     const rows = await prisma.game.findMany({
       where: { active: true },
       distinct: ["category"],
