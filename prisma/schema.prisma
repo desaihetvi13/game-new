@@ -1,0 +1,47 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Game {
+  id          Int      @id @default(autoincrement())
+  slug        String   @unique
+  title       String
+  description String   @default("")
+  category    String   @default("Action")
+  thumbnail   String   @default("/placeholder-game.png")
+  gameUrl     String   @map("game_url")
+  developer   String   @default("")
+  rating      Float    @default(4.0)
+  plays       Int      @default(0)
+  featured    Boolean  @default(false)
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([category, active])
+  @@map("games")
+}
+
+model Config {
+  key   String @id
+  value Json
+
+  @@map("config")
+}
+
+model User {
+  id        String   @id
+  email     String?  @unique
+  name      String?
+  image     String?
+  role      String   @default("user")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("users")
+}
