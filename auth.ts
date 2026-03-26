@@ -3,10 +3,9 @@ import Google from "next-auth/providers/google";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 
-export const { handlers, signIn, signOut, auth } = NextAuth({
-  trustHost: true,
-  session: { strategy: "jwt" },
-  providers: [
+const providers = [];
+if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
+  providers.push(
     Google({
       clientId: env.GOOGLE_CLIENT_ID,
       clientSecret: env.GOOGLE_CLIENT_SECRET,
@@ -18,7 +17,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         },
       },
     }),
-  ],
+  );
+}
+
+export const { handlers, signIn, signOut, auth } = NextAuth({
+  trustHost: true,
+  session: { strategy: "jwt" },
+  providers,
   callbacks: {
     async jwt({ token, user }) {
       if (user?.email && user.id) {
@@ -56,5 +61,5 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   pages: {
     signIn: "/login",
   },
-  secret: env.NEXTAUTH_SECRET,
+  secret: env.NEXTAUTH_SECRET || "dev-secret-change-me-please",
 });

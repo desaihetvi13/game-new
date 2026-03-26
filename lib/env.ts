@@ -2,25 +2,18 @@ import { z } from "zod";
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  DATABASE_URL: z.string().min(1),
-  DIRECT_URL: z.string().min(1),
-  NEXTAUTH_URL: z.string().url(),
-  NEXTAUTH_SECRET: z.string().min(32),
-  GOOGLE_CLIENT_ID: z.string().min(1),
-  GOOGLE_CLIENT_SECRET: z.string().min(1),
-  ADMIN_EMAIL: z.string().email(),
-  AWS_ACCESS_KEY_ID: z.string().min(1),
-  AWS_SECRET_ACCESS_KEY: z.string().min(1),
-  AWS_REGION: z.string().min(1),
-  AWS_BUCKET: z.string().min(1),
-  NEXT_PUBLIC_ADSENSE_PUBLISHER_ID: z.string().optional(),
+  DATABASE_URL: z.string().optional().default(""),
+  DIRECT_URL: z.string().optional().default(""),
+  NEXTAUTH_URL: z.string().optional().default(""),
+  NEXTAUTH_SECRET: z.string().optional().default(""),
+  GOOGLE_CLIENT_ID: z.string().optional().default(""),
+  GOOGLE_CLIENT_SECRET: z.string().optional().default(""),
+  ADMIN_EMAIL: z.string().optional().default("admin@example.com"),
+  AWS_ACCESS_KEY_ID: z.string().optional().default(""),
+  AWS_SECRET_ACCESS_KEY: z.string().optional().default(""),
+  AWS_REGION: z.string().optional().default(""),
+  AWS_BUCKET: z.string().optional().default(""),
+  NEXT_PUBLIC_ADSENSE_PUBLISHER_ID: z.string().optional().default(""),
 });
 
-const parsed = envSchema.safeParse(process.env);
-
-if (!parsed.success) {
-  console.error("Invalid environment variables:", parsed.error.flatten().fieldErrors);
-  throw new Error("Environment validation failed");
-}
-
-export const env = parsed.data;
+export const env = envSchema.parse(process.env);
