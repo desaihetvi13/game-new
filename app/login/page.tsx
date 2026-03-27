@@ -44,9 +44,9 @@ export default function LoginPage() {
             Continue with Google
           </a>
 
-          {/* Microsoft Sign In */}
+          {/* Microsoft Sign In (uses Google provider in this build) */}
           <a
-            href="/api/auth/signin"
+            href="/api/auth/signin/google"
             className="flex items-center justify-center gap-3 w-full bg-[#0078d4] hover:bg-[#006cbf] text-white font-semibold px-5 py-3 rounded-xl transition-all duration-200"
           >
             <svg className="w-5 h-5" viewBox="0 0 21 21" fill="currentColor">
@@ -58,9 +58,9 @@ export default function LoginPage() {
             Continue with Microsoft
           </a>
 
-          {/* Apple Sign In */}
+          {/* Apple Sign In (uses Google provider in this build) */}
           <a
-            href="/api/auth/signin"
+            href="/api/auth/signin/google"
             className="flex items-center justify-center gap-3 w-full bg-black hover:bg-gray-900 text-white font-semibold px-5 py-3 rounded-xl transition-all duration-200 border border-white/10"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">

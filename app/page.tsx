@@ -10,9 +10,16 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function HomePage() {
+interface HomePageProps {
+  searchParams?: {
+    search?: string;
+  };
+}
+
+export default async function HomePage({ searchParams }: HomePageProps) {
+  const searchQuery = searchParams?.search?.trim() || "";
   const featuredGames = await getFeaturedGames(6);
-  const popularGames = await getPopularGames(24);
+  const popularGames = await getPopularGames(24, searchQuery);
 
   return (
     <div className="w-full px-4 sm:px-6 lg:px-10 py-8 space-y-12 mb-10">
@@ -47,7 +54,7 @@ export default async function HomePage() {
       </section>
 
       {/* Featured Games */}
-      {featuredGames.length > 0 && (
+      {featuredGames.length > 0 && !searchQuery && (
         <section>
           <div className="flex items-center gap-2 mb-5">
             <Trophy className="w-5 h-5 text-yellow-400" />
@@ -61,25 +68,40 @@ export default async function HomePage() {
         </section>
       )}
 
-      {/* Popular Games */}
+      {/* Popular/Search Results */}
       <section id="popular">
         <div className="flex items-center gap-2 mb-5">
           <Zap className="w-5 h-5 text-primary-400" />
-          <h2 className="text-white font-bold text-xl">Popular Games</h2>
+          <h2 className="text-white font-bold text-xl">
+            {searchQuery ? `Search Results for "${searchQuery}"` : "Popular Games"}
+          </h2>
         </div>
         {popularGames.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <Gamepad2 className="w-16 h-16 text-white/10 mb-4" />
-            <h3 className="text-white/40 text-lg font-medium mb-2">No games yet</h3>
+            <h3 className="text-white/40 text-lg font-medium mb-2">
+              {searchQuery ? "No matching games found" : "No games yet"}
+            </h3>
             <p className="text-white/30 text-sm mb-6">
-              Head to the admin panel to upload your first HTML5 game.
+              {searchQuery
+                ? "Try another keyword (title, category, developer)."
+                : "Head to the admin panel to upload your first HTML5 game."}
             </p>
-            <Link
-              href="/admin/games"
-              className="inline-flex items-center gap-2 bg-primary/20 hover:bg-primary/30 text-primary-300 border border-primary/30 px-5 py-2.5 rounded-full text-sm font-medium transition-all"
-            >
-              Upload a Game
-            </Link>
+            {searchQuery ? (
+              <Link
+                href="/"
+                className="inline-flex items-center gap-2 bg-primary/20 hover:bg-primary/30 text-primary-300 border border-primary/30 px-5 py-2.5 rounded-full text-sm font-medium transition-all"
+              >
+                Clear Search
+              </Link>
+            ) : (
+              <Link
+                href="/admin/games"
+                className="inline-flex items-center gap-2 bg-primary/20 hover:bg-primary/30 text-primary-300 border border-primary/30 px-5 py-2.5 rounded-full text-sm font-medium transition-all"
+              >
+                Upload a Game
+              </Link>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">

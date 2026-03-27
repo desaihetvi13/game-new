@@ -8,7 +8,8 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get("category") || undefined;
-    const games = await listGames(category);
+    const search = searchParams.get("search") || undefined;
+    const games = await listGames(category, search);
     const categories = await getCategories();
     return NextResponse.json({ games, categories });
   } catch {

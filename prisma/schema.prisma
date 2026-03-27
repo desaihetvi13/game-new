@@ -18,11 +18,16 @@ model Game {
   gameUrl     String   @map("game_url")
   developer   String   @default("")
   rating      Float    @default(4.0)
+  ratingCount Int      @default(0) @map("rating_count")
   plays       Int      @default(0)
   featured    Boolean  @default(false)
   active      Boolean  @default(true)
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
+  favorites   Favorite[]
+  ratings     GameRating[]
+  progresses  GameProgress[]
+  bugReports  GameBugReport[]
 
   @@index([category, active])
   @@map("games")
@@ -42,6 +47,76 @@ model User {
   image     String?
   role      String   @default("user")
   createdAt DateTime @default(now()) @map("created_at")
+  favorites Favorite[]
+  ratings   GameRating[]
+  progress  GameProgress[]
+  bugReports GameBugReport[]
 
   @@map("users")
+}
+
+model Favorite {
+  id        Int      @id @default(autoincrement())
+  userId    String   @map("user_id")
+  gameId    Int      @map("game_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, gameId])
+  @@index([userId])
+  @@index([gameId])
+  @@map("favorites")
+}
+
+model GameRating {
+  id        Int      @id @default(autoincrement())
+  userId    String   @map("user_id")
+  gameId    Int      @map("game_id")
+  rating    Int
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, gameId])
+  @@index([gameId])
+  @@map("game_ratings")
+}
+
+model GameProgress {
+  id          Int      @id @default(autoincrement())
+  userId      String   @map("user_id")
+  gameId      Int      @map("game_id")
+  elapsedSec  Int      @default(0) @map("elapsed_sec")
+  progressPct Int?     @map("progress_pct")
+  stateJson   Json?    @map("state_json")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, gameId])
+  @@index([gameId])
+  @@map("game_progress")
+}
+
+model GameBugReport {
+  id         Int      @id @default(autoincrement())
+  gameId      Int      @map("game_id")
+  userId      String?  @map("user_id")
+  email       String?
+  message     String
+  pageUrl     String?  @map("page_url")
+  userAgent   String?  @map("user_agent")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([gameId])
+  @@index([userId])
+  @@map("game_bug_reports")
 }

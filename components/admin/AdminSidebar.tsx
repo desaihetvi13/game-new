@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -10,6 +11,7 @@ import {
   DollarSign,
   Users,
   ArrowLeft,
+  LogOut,
 } from "lucide-react";
 
 const navItems = [
@@ -24,7 +26,7 @@ export default function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-60 flex-shrink-0 bg-surface-800 border-r border-white/5 flex flex-col min-h-[calc(100vh-4rem)]">
+    <aside className="w-60 flex-shrink-0 bg-surface-800 border-r border-white/5 flex flex-col min-h-screen">
       {/* Title */}
       <div className="px-5 py-4 border-b border-white/5">
         <span className="text-white/40 text-xs font-semibold uppercase tracking-wider">
@@ -56,9 +58,17 @@ export default function AdminSidebar() {
 
       {/* Back to Site */}
       <div className="p-3 border-t border-white/5">
+        <button
+          type="button"
+          onClick={() => signOut({ callbackUrl: "/login" })}
+          className="flex w-full items-center gap-2 px-3 py-2 text-white/40 hover:text-white hover:bg-white/5 rounded-lg text-sm transition-colors"
+        >
+          <LogOut className="w-4 h-4" />
+          Logout
+        </button>
         <Link
           href="/"
-          className="flex items-center gap-2 px-3 py-2 text-white/30 hover:text-white text-sm transition-colors"
+          className="mt-1 flex items-center gap-2 px-3 py-2 text-white/30 hover:text-white rounded-lg text-sm transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
           Back to Site

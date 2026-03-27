@@ -42,6 +42,10 @@ export default function AdminGamesPage() {
     g.category.toLowerCase().includes(search.toLowerCase())
   );
 
+  const getThumbnail = (thumbnail?: string) => {
+    return thumbnail && thumbnail.trim().length > 0 ? thumbnail : "/placeholder-game.svg";
+  };
+
   const handleDelete = async (slug: string) => {
     if (!confirm("Are you sure you want to delete this game?")) return;
     try {
@@ -142,7 +146,14 @@ export default function AdminGamesPage() {
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded bg-surface-700 overflow-hidden flex-shrink-0">
-                        <img src={game.thumbnail} alt="" className="w-full h-full object-cover" />
+                        <img
+                          src={getThumbnail(game.thumbnail)}
+                          alt=""
+                          className="w-full h-full object-cover"
+                          onError={(event) => {
+                            event.currentTarget.src = "/placeholder-game.svg";
+                          }}
+                        />
                       </div>
                       <div className="min-w-0">
                         <p className="text-white text-sm font-medium truncate">{game.title}</p>
@@ -201,6 +212,11 @@ export default function AdminGamesPage() {
                 <Plus className="w-8 h-8 text-white/20 mx-auto mb-2" />
                 <p className="text-white font-medium">Click to select game ZIP</p>
                 <p className="text-white/40 text-xs mt-1">Must contain index.html at root level</p>
+                {uploadForm.file ? (
+                  <p className="text-primary-300 text-xs mt-2 truncate">
+                    Selected: {uploadForm.file.name}
+                  </p>
+                ) : null}
                 <input
                   type="file"
                   accept=".zip,application/zip"

@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-import CategoryNav from "@/components/CategoryNav";
+import AuthProvider from "@/components/AuthProvider";
+import AppShell from "@/components/AppShell";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -26,12 +25,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} bg-surface-950 text-white min-h-screen flex flex-col`}>
-        <Header />
-        <CategoryNav />
-        <main className="flex-grow w-full">
-          {children}
-        </main>
-        <Footer />
+        <AuthProvider>
+          <AppShell>{children}</AppShell>
+        </AuthProvider>
         <script dangerouslySetInnerHTML={{
           __html: `
             if ('serviceWorker' in navigator) {

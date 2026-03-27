@@ -5,6 +5,8 @@ import { uploadBufferToS3 } from "@/lib/storage";
 import { requireAdmin } from "@/lib/authz";
 import { z } from "zod";
 import { env } from "@/lib/env";
+import { mkdir, writeFile } from "fs/promises";
+import path from "path";
 
 // Dynamic import to avoid bundling issues
 const AdmZip = require("adm-zip");
@@ -52,6 +54,36 @@ function sanitizeEntryName(name: string) {
   return name.replace(/\\/g, "/").replace(/^\/+/, "").replace(/\.\./g, "").trim();
 }
 
+function getIndexPrefix(entryNames: string[]) {
+  const indexMatches = entryNames
+    .filter((name) => name.toLowerCase().endsWith("/index.html") || name.toLowerCase() === "index.html")
+    .sort((a, b) => a.length - b.length);
+
+  if (indexMatches.length === 0) return null;
+
+  const chosenIndexPath = indexMatches[0];
+  if (chosenIndexPath.toLowerCase() === "index.html") return "";
+
+  const dir = path.posix.dirname(chosenIndexPath);
+  return dir === "." ? "" : `${dir}/`;
+}
+
+function hasS3Configured() {
+  return Boolean(env.AWS_BUCKET && env.AWS_REGION && env.AWS_ACCESS_KEY_ID && env.AWS_SECRET_ACCESS_KEY);
+}
+
+async function saveGameFile(key: string, data: Buffer, contentType: string) {
+  if (hasS3Configured()) {
+    await uploadBufferToS3(key, data, contentType);
+    return;
+  }
+
+  const safeKey = sanitizeEntryName(key);
+  const targetPath = path.join(process.cwd(), "public", safeKey);
+  await mkdir(path.dirname(targetPath), { recursive: true });
+  await writeFile(targetPath, data);
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await requireAdmin();
@@ -87,24 +119,33 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(arrayBuffer);
     const zip = new AdmZip(buffer);
     const entries = zip.getEntries().filter((entry: { isDirectory: boolean }) => !entry.isDirectory);
-    let hasIndex = false;
+    const entryNames = entries
+      .map((entry: { entryName: string }) => sanitizeEntryName(entry.entryName))
+      .filter(Boolean);
+    const rootPrefixToStrip = getIndexPrefix(entryNames);
+
+    if (rootPrefixToStrip === null) {
+      return NextResponse.json(
+        { error: "ZIP must contain index.html (at any folder depth)." },
+        { status: 400 },
+      );
+    }
 
     for (const entry of entries) {
-      const safeName = sanitizeEntryName(entry.entryName);
-      if (!safeName) continue;
-      if (safeName.toLowerCase() === "index.html") {
-        hasIndex = true;
+      const originalName = sanitizeEntryName(entry.entryName);
+      if (rootPrefixToStrip && !originalName.startsWith(rootPrefixToStrip)) {
+        continue;
       }
+      const safeName = rootPrefixToStrip ? originalName.slice(rootPrefixToStrip.length) : originalName;
+      if (!safeName) continue;
       const entryData = entry.getData() as Buffer;
-      await uploadBufferToS3(`${prefix}/${safeName}`, entryData, getContentType(safeName));
+      await saveGameFile(`${prefix}/${safeName}`, entryData, getContentType(safeName));
     }
 
-    if (!hasIndex) {
-      return NextResponse.json({ error: "ZIP must contain index.html at root level" }, { status: 400 });
-    }
-
-    const gameUrl = `https://${env.AWS_BUCKET}.s3.${env.AWS_REGION}.amazonaws.com/${prefix}/index.html`;
-    const thumbUrl = payload.thumbnail || "/placeholder-game.png";
+    const gameUrl = hasS3Configured()
+      ? `https://${env.AWS_BUCKET}.s3.${env.AWS_REGION}.amazonaws.com/${prefix}/index.html`
+      : `/${prefix}/index.html`;
+    const thumbUrl = payload.thumbnail || "/placeholder-game.svg";
 
     const game = await createGame({
       slug,
@@ -119,7 +160,8 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ game, slug }, { status: 201 });
-  } catch {
-    return NextResponse.json({ error: "Upload failed" }, { status: 500 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Upload failed";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

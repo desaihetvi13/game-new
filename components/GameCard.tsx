@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import { Play, Star } from "lucide-react";
 import { formatPlays } from "@/lib/utils";
 import type { Game } from "@/lib/games";
@@ -11,19 +12,27 @@ interface GameCardProps {
 }
 
 export default function GameCard({ game }: GameCardProps) {
+  const initialThumbnail = useMemo(
+    () => (game.thumbnail?.trim() ? game.thumbnail : "/placeholder-game.svg"),
+    [game.thumbnail],
+  );
+  const [thumbnailSrc, setThumbnailSrc] = useState(initialThumbnail);
+
   return (
     <Link href={`/games/${game.slug}`} className="group block">
       <div className="relative overflow-hidden rounded-xl bg-card border border-white/5 shadow-lg transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-primary/20 hover:border-primary/40">
         {/* Thumbnail */}
         <div className="relative aspect-[4/3] overflow-hidden bg-surface-800">
           <Image
-            src={game.thumbnail}
+            src={thumbnailSrc}
             alt={game.title}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
             className="object-cover transition-transform duration-500 group-hover:scale-110"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = "/placeholder-game.png";
+            onError={() => {
+              if (thumbnailSrc !== "/placeholder-game.svg") {
+                setThumbnailSrc("/placeholder-game.svg");
+              }
             }}
           />
           {/* Hover Overlay */}

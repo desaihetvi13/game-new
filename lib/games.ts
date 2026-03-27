@@ -11,6 +11,7 @@ export interface Game {
   game_url: string;
   developer: string;
   rating: number;
+  rating_count: number;
   plays: number;
   featured: number;
   active: number;
@@ -18,7 +19,15 @@ export interface Game {
   updated_at: string;
 }
 
-export type GameInput = Omit<Game, "id" | "created_at" | "updated_at">;
+export type GameInput = Omit<Game, "id" | "created_at" | "updated_at" | "rating_count">;
+
+function normalizeThumbnail(thumbnail: string) {
+  const value = (thumbnail || "").trim();
+  if (!value || value === "/placeholder-game.png") {
+    return "/placeholder-game.svg";
+  }
+  return value;
+}
 
 function toGame(entity: {
   id: number;
@@ -30,6 +39,7 @@ function toGame(entity: {
   gameUrl: string;
   developer: string;
   rating: number;
+  ratingCount: number;
   plays: number;
   featured: boolean;
   active: boolean;
@@ -42,10 +52,11 @@ function toGame(entity: {
     title: entity.title,
     description: entity.description,
     category: entity.category,
-    thumbnail: entity.thumbnail,
+    thumbnail: normalizeThumbnail(entity.thumbnail),
     game_url: entity.gameUrl,
     developer: entity.developer,
     rating: entity.rating,
+    rating_count: entity.ratingCount,
     plays: entity.plays,
     featured: entity.featured ? 1 : 0,
     active: entity.active ? 1 : 0,
@@ -68,13 +79,24 @@ function isConnectionError(error: unknown) {
   );
 }
 
-export async function listGames(category?: string): Promise<Game[]> {
+export async function listGames(category?: string, search?: string): Promise<Game[]> {
   try {
     const prisma = getPrisma();
+    const normalizedSearch = search?.trim();
     const games = await prisma.game.findMany({
       where: {
         active: true,
         ...(category && category !== "all" ? { category } : {}),
+        ...(normalizedSearch
+          ? {
+              OR: [
+                { title: { contains: normalizedSearch, mode: "insensitive" } },
+                { description: { contains: normalizedSearch, mode: "insensitive" } },
+                { category: { contains: normalizedSearch, mode: "insensitive" } },
+                { developer: { contains: normalizedSearch, mode: "insensitive" } },
+              ],
+            }
+          : {}),
       },
       orderBy: [{ featured: "desc" }, { plays: "desc" }],
     });
@@ -100,11 +122,24 @@ export async function getFeaturedGames(limit = 6): Promise<Game[]> {
   }
 }
 
-export async function getPopularGames(limit = 12): Promise<Game[]> {
+export async function getPopularGames(limit = 12, search?: string): Promise<Game[]> {
   try {
     const prisma = getPrisma();
+    const normalizedSearch = search?.trim();
     const games = await prisma.game.findMany({
-      where: { active: true },
+      where: {
+        active: true,
+        ...(normalizedSearch
+          ? {
+              OR: [
+                { title: { contains: normalizedSearch, mode: "insensitive" } },
+                { description: { contains: normalizedSearch, mode: "insensitive" } },
+                { category: { contains: normalizedSearch, mode: "insensitive" } },
+                { developer: { contains: normalizedSearch, mode: "insensitive" } },
+              ],
+            }
+          : {}),
+      },
       orderBy: { plays: "desc" },
       take: limit,
     });
